@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Irrigation Predictor · Power BI Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* ── Paleta terrosa extraída de la imagen ── */
+    --rose:      #C97E85;   /* rosa empolvado */
+    --rose-dk:   #9A5A60;
+    --rose-lt:   #F2E4E5;
+
+    --sand:      #CEC49A;   /* arena cálida */
+    --sand-dk:   #9A9068;
+    --sand-lt:   #F5F0DE;
+
+    --sage:      #9DADA4;   /* verde salvia */
+    --sage-dk:   #6A7F78;
+    --sage-lt:   #E4EDEA;
+
+    --terracota: #C98B6A;   /* terracota */
+    --terra-dk:  #9A6040;
+    --terra-lt:  #F5E4D8;
+
+    --mocha:     #9A8A6E;   /* marrón mocha */
+    --mocha-dk:  #6B5E48;
+    --mocha-lt:  #EDE8DE;
+
+    /* Fondos y texto */
+    --bg:        #F7F4EE;
+    --surface:   #FDFCF9;
+    --border:    rgba(120,100,80,0.12);
+    --text-1:    #2A2318;
+    --text-2:    #5A4E3C;
+    --text-3:    #9A8A76;
+
+    --font:      'DM Sans', sans-serif;
+    --mono:      'DM Mono', monospace;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #EDE8DE;
+    font-family: var(--font);
+    color: var(--text-1);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .slide-wrap {
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #E2DDD4;
+  }
+
+  .slide {
+    width: 1280px;
+    height: 720px;
+    background: var(--bg);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 48px rgba(80,60,40,0.18);
+    flex-shrink: 0;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 10px; }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--sage);
+  }
+
+  .header-title { font-size: 13px; font-weight: 600; color: var(--text-1); letter-spacing:.02em; }
+  .header-sub   { font-size: 11px; color: var(--text-3); margin-left: 4px; }
+
+  .header-right {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-3);
+  }
+
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--sage);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── KPI BAR ── */
+  .kpi-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 10px 28px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .kpi {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px 14px;
+    border: 0.5px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi-label {
+    font-size: 10px; color: var(--text-3); font-weight: 500;
+    letter-spacing:.06em; text-transform: uppercase; margin-bottom: 4px;
+  }
+
+  .kpi-val {
+    font-size: 26px; font-weight: 600; line-height: 1;
+    margin-bottom: 3px; font-variant-numeric: tabular-nums;
+  }
+
+  .kpi-meta {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; color: var(--text-3);
+  }
+
+  .badge {
+    font-size: 9px; font-weight: 600;
+    padding: 2px 6px; border-radius: 3px;
+  }
+  .b-sage  { background: var(--sage-lt);   color: var(--sage-dk); }
+  .b-rose  { background: var(--rose-lt);   color: var(--rose-dk); }
+  .b-sand  { background: var(--sand-lt);   color: var(--sand-dk); }
+  .b-terra { background: var(--terra-lt);  color: var(--terra-dk); }
+
+  /* ── MAIN ── */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr 188px;
+    gap: 10px;
+    padding: 10px 28px 12px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .panel {
+    background: var(--surface);
+    border-radius: 8px;
+    border: 0.5px solid var(--border);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-title {
+    font-size: 11px; font-weight: 600; color: var(--text-2);
+    letter-spacing:.04em; text-transform: uppercase;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+  }
+
+  .panel-icon {
+    width: 16px; height: 16px; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center; font-size: 9px;
+  }
+
+  /* ── LINE CHART ── */
+  .chart-wrap { flex: 1; min-height: 0; position: relative; }
+
+  .legend {
+    display: flex; gap: 14px; margin-top: 8px; flex-shrink: 0;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; color: var(--text-2);
+  }
+  .legend-line { width: 20px; height: 2px; border-radius: 1px; }
+  .legend-line.dashed {
+    background: repeating-linear-gradient(90deg, var(--terracota) 0 4px, transparent 4px 7px);
+  }
+
+  /* ── FEATURE IMPORTANCE ── */
+  .fi-row {
+    display: flex; align-items: center;
+    gap: 8px; margin-bottom: 7px;
+  }
+  .fi-label {
+    font-size: 10px; color: var(--text-2);
+    min-width: 110px; text-align: right; line-height: 1.2;
+  }
+  .fi-track {
+    flex: 1; height: 8px;
+    background: var(--bg); border-radius: 4px; overflow: hidden;
+  }
+  .fi-fill {
+    height: 100%; border-radius: 4px;
+    transition: width .6s cubic-bezier(.4,0,.2,1);
+  }
+  .fi-pct {
+    font-size: 10px; color: var(--text-3);
+    min-width: 30px; text-align: right; font-family: var(--mono);
+  }
+
+  /* ── SLICERS ── */
+  .slicer-list { display: flex; flex-direction: column; gap: 7px; flex: 1; }
+
+  .slicer {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+  }
+  .slicer-label {
+    font-size: 9px; font-weight: 600; color: var(--text-3);
+    text-transform: uppercase; letter-spacing:.06em; margin-bottom: 3px;
+  }
+  .slicer-val {
+    font-size: 11px; color: var(--text-1);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .slicer-arrow { font-size: 10px; color: var(--text-3); }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 6px 28px;
+    display: flex; align-items: center; gap: 16px; flex-shrink: 0;
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .footer-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; color: var(--text-3);
+  }
+  .footer-sep { width: 1px; height: 12px; background: var(--border); }
+  .footer-right {
+    margin-left: auto; font-size: 10px;
+    color: var(--text-3); font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+<div class="slide-wrap">
+<div class="slide">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-dot"></div>
+      <span class="header-title">Irrigation Predictor</span>
+      <span class="header-sub">· Kaggle ML Dashboard</span>
+    </div>
+    <div class="header-right">
+      <div class="status-dot"></div>
+      Modelo activo: XGBoost &nbsp;·&nbsp; Temporada 2024 – Verano &nbsp;·&nbsp; 12 zonas monitoreadas
+    </div>
+  </header>
+
+  <!-- KPI BAR -->
+  <div class="kpi-bar">
+    <div class="kpi" style="border-left:3px solid var(--sage)">
+      <div class="kpi-label">R² del modelo</div>
+      <div class="kpi-val" style="color:var(--sage-dk)">0.91</div>
+      <div class="kpi-meta">XGBoost · CV 5-fold &nbsp;<span class="badge b-sage">↑ vs baseline</span></div>
+    </div>
+    <div class="kpi" style="border-left:3px solid var(--sand)">
+      <div class="kpi-label">RMSE</div>
+      <div class="kpi-val" style="color:var(--sand-dk)">2.34 m³</div>
+      <div class="kpi-meta">Error cuadrático medio &nbsp;<span class="badge b-sand">MAE 1.8</span></div>
+    </div>
+    <div class="kpi" style="border-left:3px solid var(--sage)">
+      <div class="kpi-label">Ahorro de agua</div>
+      <div class="kpi-val" style="color:var(--sage-dk)">18%</div>
+      <div class="kpi-meta">vs plan sin modelo &nbsp;<span class="badge b-sage">↑ eficiencia</span></div>
+    </div>
+    <div class="kpi" style="border-left:3px solid var(--rose)">
+      <div class="kpi-label">Zonas críticas</div>
+      <div class="kpi-val" style="color:var(--rose-dk)">3 / 12</div>
+      <div class="kpi-meta">Riego insuficiente &nbsp;<span class="badge b-rose">⚠ alerta</span></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- PANEL 1: Pred vs Real -->
+    <div class="panel">
+      <div class="panel-title">
+        <div class="panel-icon" style="background:var(--sage-lt)">📈</div>
+        Predicción vs real · volumen m³ por semana
+      </div>
+      <div class="chart-wrap">
+        <svg width="100%" height="100%" viewBox="0 0 420 220" preserveAspectRatio="none">
+          <!-- Grid lines -->
+          <line x1="40" y1="10"  x2="40"  y2="185" stroke="#DDD8CE" stroke-width="1"/>
+          <line x1="40" y1="185" x2="415" y2="185" stroke="#DDD8CE" stroke-width="1"/>
+          <line x1="40" y1="10"  x2="415" y2="10"  stroke="#DDD8CE" stroke-width="0.5" stroke-dasharray="3 3"/>
+          <line x1="40" y1="55"  x2="415" y2="55"  stroke="#DDD8CE" stroke-width="0.5" stroke-dasharray="3 3"/>
+          <line x1="40" y1="100" x2="415" y2="100" stroke="#DDD8CE" stroke-width="0.5" stroke-dasharray="3 3"/>
+          <line x1="40" y1="145" x2="415" y2="145" stroke="#DDD8CE" stroke-width="0.5" stroke-dasharray="3 3"/>
+          <!-- Y labels -->
+          <text font-size="9" fill="#9A8A76" x="36" y="13"  text-anchor="end">80</text>
+          <text font-size="9" fill="#9A8A76" x="36" y="58"  text-anchor="end">65</text>
+          <text font-size="9" fill="#9A8A76" x="36" y="103" text-anchor="end">50</text>
+          <text font-size="9" fill="#9A8A76" x="36" y="148" text-anchor="end">35</text>
+          <text font-size="9" fill="#9A8A76" x="36" y="188" text-anchor="end">20</text>
+          <!-- Área real (sage) -->
+          <polygon fill="#9DADA4" fill-opacity="0.12"
+            points="55,148 115,118 175,88 235,105 295,58 355,75 415,52 415,185 55,185"/>
+          <!-- Línea real (sage) -->
+          <polyline fill="none" stroke="#9DADA4" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round"
+            points="55,148 115,118 175,88 235,105 295,58 355,75 415,52"/>
+          <!-- Área pred (terracota) -->
+          <polygon fill="#C98B6A" fill-opacity="0.08"
+            points="55,145 115,122 175,91 235,101 295,61 355,71 415,55 415,185 55,185"/>
+          <!-- Línea pred (terracota dashed) -->
+          <polyline fill="none" stroke="#C98B6A" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"
+            stroke-dasharray="6 3"
+            points="55,145 115,122 175,91 235,101 295,61 355,71 415,55"/>
+          <!-- Puntos reales -->
+          <circle cx="55"  cy="148" r="4" fill="#9DADA4" stroke="white" stroke-width="1.5"/>
+          <circle cx="115" cy="118" r="4" fill="#9DADA4" stroke="white" stroke-width="1.5"/>
+          <circle cx="175" cy="88"  r="4" fill="#9DADA4" stroke="white" stroke-width="1.5"/>
+          <circle cx="235" cy="105" r="4" fill="#9DADA4" stroke="white" stroke-width="1.5"/>
+          <circle cx="295" cy="58"  r="4" fill="#9DADA4" stroke="white" stroke-width="1.5"/>
+          <circle cx="355" cy="75"  r="4" fill="#9DADA4" stroke="white" stroke-width="1.5"/>
+          <!-- Puntos pred -->
+          <circle cx="55"  cy="145" r="3.5" fill="#C98B6A" stroke="white" stroke-width="1.5"/>
+          <circle cx="115" cy="122" r="3.5" fill="#C98B6A" stroke="white" stroke-width="1.5"/>
+          <circle cx="175" cy="91"  r="3.5" fill="#C98B6A" stroke="white" stroke-width="1.5"/>
+          <circle cx="235" cy="101" r="3.5" fill="#C98B6A" stroke="white" stroke-width="1.5"/>
+          <circle cx="295" cy="61"  r="3.5" fill="#C98B6A" stroke="white" stroke-width="1.5"/>
+          <circle cx="355" cy="71"  r="3.5" fill="#C98B6A" stroke="white" stroke-width="1.5"/>
+          <!-- X labels -->
+          <text font-size="9" fill="#9A8A76" x="55"  y="200" text-anchor="middle">S1</text>
+          <text font-size="9" fill="#9A8A76" x="115" y="200" text-anchor="middle">S2</text>
+          <text font-size="9" fill="#9A8A76" x="175" y="200" text-anchor="middle">S3</text>
+          <text font-size="9" fill="#9A8A76" x="235" y="200" text-anchor="middle">S4</text>
+          <text font-size="9" fill="#9A8A76" x="295" y="200" text-anchor="middle">S5</text>
+          <text font-size="9" fill="#9A8A76" x="355" y="200" text-anchor="middle">S6</text>
+          <text font-size="9" fill="#9A8A76" x="415" y="200" text-anchor="middle">S7</text>
+          <!-- Zona critica -->
+          <rect x="44" y="8" width="28" height="180" fill="#C97E85" fill-opacity="0.08" rx="2"/>
+          <text font-size="8" fill="#C97E85" x="58" y="22" text-anchor="middle">⚠</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-line" style="background:var(--sage)"></div>
+          Valor real
+        </div>
+        <div class="legend-item">
+          <div class="legend-line dashed"></div>
+          Predicción XGBoost
+        </div>
+        <div class="legend-item" style="margin-left:auto">
+          <div style="width:10px;height:10px;border-radius:2px;background:var(--rose);opacity:.4"></div>
+          <span>Zona crítica</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 2: Feature Importance -->
+    <div class="panel">
+      <div class="panel-title">
+        <div class="panel-icon" style="background:var(--sand-lt)">📊</div>
+        Feature importance · variables predictoras
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+        <div class="fi-row">
+          <div class="fi-label">Humedad suelo</div>
+          <div class="fi-track"><div class="fi-fill" style="width:88%;background:var(--sage)"></div></div>
+          <div class="fi-pct">0.88</div>
+        </div>
+        <div class="fi-row">
+          <div class="fi-label">Temperatura máx.</div>
+          <div class="fi-track"><div class="fi-fill" style="width:74%;background:var(--terracota)"></div></div>
+          <div class="fi-pct">0.74</div>
+        </div>
+        <div class="fi-row">
+          <div class="fi-label">Evapotranspiración</div>
+          <div class="fi-track"><div class="fi-fill" style="width:66%;background:var(--terracota)"></div></div>
+          <div class="fi-pct">0.66</div>
+        </div>
+        <div class="fi-row">
+          <div class="fi-label">Lluvia acumulada</div>
+          <div class="fi-track"><div class="fi-fill" style="width:55%;background:var(--sand)"></div></div>
+          <div class="fi-pct">0.55</div>
+        </div>
+        <div class="fi-row">
+          <div class="fi-label">pH del suelo</div>
+          <div class="fi-track"><div class="fi-fill" style="width:41%;background:var(--sand)"></div></div>
+          <div class="fi-pct">0.41</div>
+        </div>
+        <div class="fi-row">
+          <div class="fi-label">Velocidad del viento</div>
+          <div class="fi-track"><div class="fi-fill" style="width:28%;background:var(--mocha)"></div></div>
+          <div class="fi-pct">0.28</div>
+        </div>
+        <div class="fi-row">
+          <div class="fi-label">Conductividad eléc.</div>
+          <div class="fi-track"><div class="fi-fill" style="width:18%;background:var(--mocha)"></div></div>
+          <div class="fi-pct">0.18</div>
+        </div>
+        <div class="fi-row">
+          <div class="fi-label">Radiación solar</div>
+          <div class="fi-track"><div class="fi-fill" style="width:12%;background:var(--mocha)"></div></div>
+          <div class="fi-pct">0.12</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border);display:flex;gap:10px;flex-wrap:wrap">
+        <div style="font-size:9px;color:var(--text-3);display:flex;align-items:center;gap:4px">
+          <div style="width:8px;height:8px;border-radius:2px;background:var(--sage)"></div>Suelo
+        </div>
+        <div style="font-size:9px;color:var(--text-3);display:flex;align-items:center;gap:4px">
+          <div style="width:8px;height:8px;border-radius:2px;background:var(--terracota)"></div>Clima
+        </div>
+        <div style="font-size:9px;color:var(--text-3);display:flex;align-items:center;gap:4px">
+          <div style="width:8px;height:8px;border-radius:2px;background:var(--sand)"></div>Agua
+        </div>
+        <div style="font-size:9px;color:var(--text-3);display:flex;align-items:center;gap:4px">
+          <div style="width:8px;height:8px;border-radius:2px;background:var(--mocha)"></div>Ambiente
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 3: Slicers -->
+    <div class="panel">
+      <div class="panel-title">
+        <div class="panel-icon" style="background:var(--mocha-lt)">🎛</div>
+        Filtros
+      </div>
+      <div class="slicer-list">
+        <div class="slicer">
+          <div class="slicer-label">Zona agrícola</div>
+          <div class="slicer-val">Todas las zonas <span class="slicer-arrow">▾</span></div>
+        </div>
+        <div class="slicer">
+          <div class="slicer-label">Temporada</div>
+          <div class="slicer-val">2024 – Verano <span class="slicer-arrow">▾</span></div>
+        </div>
+        <div class="slicer">
+          <div class="slicer-label">Tipo de cultivo</div>
+          <div class="slicer-val">Todos <span class="slicer-arrow">▾</span></div>
+        </div>
+        <div class="slicer">
+          <div class="slicer-label">Modelo activo</div>
+          <div class="slicer-val" style="color:var(--sage-dk)">XGBoost (top) <span class="slicer-arrow">▾</span></div>
+        </div>
+        <div class="slicer">
+          <div class="slicer-label">Umbral de alerta</div>
+          <div class="slicer-val" style="color:var(--rose-dk)">Déficit &gt; 20% <span class="slicer-arrow">▾</span></div>
+        </div>
+      </div>
+      <!-- Mini modelo summary -->
+      <div style="margin-top:8px;background:var(--sage-lt);border-radius:6px;padding:8px 10px">
+        <div style="font-size:9px;font-weight:600;color:var(--sage-dk);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Modelo seleccionado</div>
+        <div style="font-size:11px;font-weight:600;color:var(--sage-dk)">XGBoost</div>
+        <div style="font-size:10px;color:var(--sage-dk);margin-top:2px">R² 0.91 · RMSE 2.34</div>
+        <div style="font-size:10px;color:var(--sage-dk)">CV 5-fold · 847 features</div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-item"><div class="legend-dot" style="background:var(--sage)"></div>Suelo / eficiencia</div>
+    <div class="footer-sep"></div>
+    <div class="footer-item"><div class="legend-dot" style="background:var(--terracota)"></div>Clima / predicción</div>
+    <div class="footer-sep"></div>
+    <div class="footer-item"><div class="legend-dot" style="background:var(--sand)"></div>Agua / alertas</div>
+    <div class="footer-sep"></div>
+    <div class="footer-item"><div class="legend-dot" style="background:var(--rose)"></div>Zonas críticas</div>
+    <div class="footer-sep"></div>
+    <div class="footer-item"><div class="legend-dot" style="background:var(--mocha)"></div>Variables ambiente</div>
+    <div class="footer-right">Kaggle Irrigation Predictor · ML Pipeline · 2024</div>
+  </footer>
+
+</div>
+</div>
+</body>
+</html>
